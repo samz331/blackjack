@@ -185,9 +185,27 @@ function getQ(states, transitions, rewards){
 }
 
 
-Q = getQ(states, transitions, rewards);
+var Q = getQ(states, transitions, rewards);
 console.log(Q);
 
+
+function optimalPlayerStrategy(Q, state){
+  var obj = Q[state];
+  return Object.keys(obj).reduce(function(a, b){ return obj[a] > obj[b] ? a : b });
+}
+
+for (var dealerVal = 1; dealerVal < 11; dealerVal++) {
+  for (var playerVal = 2; playerVal < 23; playerVal++) {
+    var state = packState(playerVal, dealerVal, false);
+    var action = optimalPlayerStrategy(Q, state);
+    console.log(playerVal, dealerVal, action, Q[state]);
+  }
+}
+
+
+var state = packState(20, 7, false);
+var action = optimalPlayerStrategy(Q, state);
+console.log(action, Q[state]);
 
 
 
