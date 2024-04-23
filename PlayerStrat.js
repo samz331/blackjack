@@ -4,7 +4,6 @@ var states = [];
 console.log(states);
 
 
-
 function getNewCard(playerVal, dealerVal, dealerMove) {
   var result = {};
 
@@ -150,6 +149,12 @@ console.log(rewards[packState(21, 22, true)]);
 console.log(rewards[packState(22, 22, true)]);
 console.log(rewards[packState(17, 17, true)]);
 
+states = Object.keys(transitions);
+states.push("final");
+var sorted = topologicalSort(states, transitions);
+console.log(sorted[sorted.length - 1]);
+
+
 
 // for (var i = 2; i <= 22; i++) {
 //   for (var j = 1; j <= 22; j++) {
@@ -162,3 +167,45 @@ console.log(rewards[packState(17, 17, true)]);
 
 
 
+
+//// Div -- MDP Solver
+
+
+
+function visitNode(state, transitions, visited, result) {
+  if(state in visited && visited[state] == true){
+    throw new Error(`Not a DAG(Cycle detected) ${state}`);
+  }else if(state in visited){
+    return;
+  }
+
+  visited[state] = true;
+
+  if (state in transitions) {
+    // not a terminal state
+    for (const action in transitions[state]) {
+      for (const nextState in transitions[state][action]) {
+        visitNode(nextState, transitions, visited, result);
+      }
+    }
+  }
+
+  visited[state] = false;
+  result.unshift(state);
+}
+
+function topologicalSort(states, transitions){
+  // topologically sorted list
+  var result = [];
+
+  // mapped to true - active, false - done
+  var visited = {};
+
+  for(const state_idx in states){
+    visitNode(states[state_idx], transitions, visited, result);
+  }
+
+  return result;
+}
+
+//// Div End - MDP Solver
