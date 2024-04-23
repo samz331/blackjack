@@ -144,15 +144,51 @@ var rewards = getRewards(transitions);
 console.log(Object.keys(transitions).length);
 console.log(transitions[packState(2, 2, false)]);
 // console.log(rewards);
-console.log(rewards[packState(2, 21, true)]);
-console.log(rewards[packState(21, 22, true)]);
-console.log(rewards[packState(22, 22, true)]);
-console.log(rewards[packState(17, 17, true)]);
+// // log rewards for edge cases
+// console.log(rewards[packState(2, 21, true)]);
+// console.log(rewards[packState(21, 22, true)]);
+// console.log(rewards[packState(22, 22, true)]);
+// console.log(rewards[packState(17, 17, true)]);
 
 states = Object.keys(transitions);
 states.push("final");
-var sorted = topologicalSort(states, transitions);
-console.log(sorted[sorted.length - 1]);
+var sortedStates = topologicalSort(states, transitions);
+console.log(sortedStates[sortedStates.length - 1]);
+
+
+function getValue(obj){
+  return Math.max(...Object.values(obj));
+}
+
+function getQ(states, transitions, rewards){
+  var sortedStates = topologicalSort(states, transitions);
+  Q = {}
+  while(sortedStates.length != 0){
+    var state = sortedStates.pop();
+    if (!(state in transitions)){
+      // denotes final state
+      Q[state] = {"dummy" : 0};
+      continue;
+    }
+    Q[state] = {}
+    for (action in transitions[state]){
+      nextStateProbs = transitions[state][action];
+      value = 0;
+      for (nextState in nextStateProbs){
+        stateVal = getValue(Q[nextState]);
+        value += nextStateProbs[nextState] * (stateVal + rewards[state][action][nextState]);
+      }
+      Q[state][action] = value;
+    }
+  }
+  return Q;
+}
+
+
+Q = getQ(states, transitions, rewards);
+console.log(Q);
+
+
 
 
 
