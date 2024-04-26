@@ -1,5 +1,5 @@
-// represent player hand - [0]: value, [1]: ace in hand, (can be treated as 1 if needed)
-var hand = [0, false]
+  // represent player hand - [0]: value, [1]: ace in hand, (can be treated as 1 if needed)
+  // var hand = [0, false]
 
   // generate a random card, assuming each rank occurs w.p. 1/13
   // in particular, this means the values 1 through 9 appear w.p. 1/13
@@ -18,14 +18,14 @@ var hand = [0, false]
       if (card == 1 && hand[0] <= 10){
         var newHand = [hand[0] + 11, true];
         return handUpdate(newHand, player, dealerCard);
-      }else if(hand[0] + card > 21 && hand[1]){
+      } else if(hand[0] + card > 21 && hand[1]) {
         var newHand = [hand[0] + card - 10, false];
         return handUpdate(newHand, player, dealerCard);
-      }else{
+      } else {
         var newHand = [hand[0] + card, hand[1]];
         return handUpdate(newHand, player, dealerCard);
       }
-    }else{
+    } else {
       return hand[0];
     }
   }
@@ -34,9 +34,9 @@ var hand = [0, false]
     var c1 = getCard();
     var c2 = getCard();
     var val = c1 + c2;
-    if (c1 == 1 || c2 == 1){
+    if (c1 == 1 || c2 == 1) {
       return handUpdate([val+ 10, true], player, dealerCard);
-    }else{
+    } else {
       return handUpdate([val, false], player, dealerCard);
     }
   }
@@ -49,9 +49,9 @@ var hand = [0, false]
   var doDealerHand = function(dealerCard) {
     var hiddenCard = getCard();
     var val = dealerCard + hiddenCard;
-    if (dealerCard == 1 || hiddenCard == 1){
+    if (dealerCard == 1 || hiddenCard == 1) {
       return handUpdate([val + 10, true], dealer, dealerCard);
-    }else{
+    } else {
       return handUpdate([val, false], dealer, dealerCard);
     }
   }

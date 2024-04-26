@@ -1,8 +1,8 @@
-// false -- indicates player's turn
-var states = [];
-console.log(states);
+// note: will need to import functions from SolveAcyclicMDP here
 
 
+// given state values, determine all possible transitions and their
+// probabilities assuming the active player hits
 function getNewCard(playerVal, playerSoft, dealerVal, dealerSoft, dealerMove) {
   var result = {};
 
@@ -18,7 +18,7 @@ function getNewCard(playerVal, playerSoft, dealerVal, dealerSoft, dealerMove) {
         var newVal = Math.min(dealerVal + i, 22);
         var packedState = packState(playerVal, playerSoft, newVal, dealerSoft, true);
       }
-    }else{
+    } else{
       if (i == 1 && playerVal <= 10) {
         var newVal = playerVal + 11;
         var packedState = packState(newVal, true, dealerVal, dealerSoft, false);
@@ -32,21 +32,21 @@ function getNewCard(playerVal, playerSoft, dealerVal, dealerSoft, dealerMove) {
     }
 
     var probIncrease = (i < 10) ? 1/13 : 4/13;
-    if (packedState in result){
+    if (packedState in result) {
       result[packedState] += probIncrease;
-    }else{
+    } else {
       result[packedState] = probIncrease;
     }
   }
   return result;
 }
 
-
+// convert state values to string representation
 function packState(playerVal, playerSoft, dealerVal, dealerSoft, dealerMove) {
   return "("+ playerVal.toString() + "," + playerSoft.toString() + "," + dealerVal.toString() + "," + dealerSoft.toString() + "," + dealerMove.toString() + ")";
 }
 
-
+// extract state values from string representation
 function parseState(s) {
   var snew = s.split(',');
   var player = parseInt(snew[0].slice(1));
@@ -58,7 +58,8 @@ function parseState(s) {
 }
 
 
-// Takes state -> Object[Stand/Hit] -> [Object (state: probabilities)]
+// Given a state, returns object mapping each action (hit/stand)
+// to the corresponding transitions and their probabilities
 // pre: s != final
 function genTransitions(s) {
   const [playerVal, playerSoft, dealerVal, dealerSoft, dealerMove] = parseState(s);
@@ -66,19 +67,19 @@ function genTransitions(s) {
   if (dealerMove) {
     if (dealerVal >= 17) {
       return {"stand": {"final": 1}, "hit": {"final" : 1}};
-    }else{
+    } else {
       var nextStateProbs = getNewCard(playerVal, playerSoft, dealerVal, dealerSoft, true);
       return {"stand": nextStateProbs,
               "hit": nextStateProbs}
     }
-  }else{
+  } else {
     var result = {};
     var standState = packState(playerVal, false, dealerVal, dealerSoft, true);
     result["stand"] = {[standState]: 1};
 
-    if(playerVal >= 22) {
+    if (playerVal >= 22) {
       result["hit"] = {[standState] : 1};
-    }else{
+    } else {
       result["hit"] = getNewCard(playerVal, playerSoft, dealerVal, dealerSoft, false);
     }
 
@@ -87,30 +88,31 @@ function genTransitions(s) {
 
 }
 
-
+// Gets the reward for transitioning out of a state
+// note this is 0 unless the state transitions to the final state
 function getReward(playerVal, dealerVal, dealerMove) {
   // check if in final state
   if (dealerMove && dealerVal >= 17) {
     if (playerVal >= 22) {
       return -1;
     }
-    if(dealerVal >= 22) {
+    if (dealerVal >= 22) {
       return 1;
     }
 
-    if(playerVal > dealerVal){
+    if (playerVal > dealerVal) {
       return 1;
-    }else if(playerVal == dealerVal){
+    } else if (playerVal == dealerVal) {
       return 0;
-    }else{
+    } else {
       return -1;
     }
-  }else{
+  } else {
     return 0;
   }
 }
 
-
+// Given the transitions, generate the rewards mapping
 function getRewards(transitions) {
   var result = {};
   for (var state in transitions) {
@@ -130,16 +132,18 @@ function getRewards(transitions) {
   return result;
 }
 
+// generate all states with no predecessor
+// entire chain can be constructed from just these states
 var initialStates = [];
 for (var i = 2; i <= 11; i++) {
   initialStates.push(packState(4, false, i, (i == 11), false));
   initialStates.push(packState(5, false, i, (i == 11), false));
   initialStates.push(packState(12, true, i, (i == 11), false));
 }
-console.log(initialStates);
+
+// generate the transitions for the MDP
 var queue = [...initialStates];
 var transitions = {"final": {}};
-
 while (queue.length != 0){
   var s = queue.pop();
   if (s in transitions) {
@@ -154,14 +158,28 @@ while (queue.length != 0){
     queue.push(nextState);
   }
 }
+delete transitions["final"]; // no transition out of final state
 
-delete transitions["final"];
-
+// generate the reward mapping for the MDP
 var rewards = getRewards(transitions);
+
+states = Object.keys(transitions);
+states.push("final");
+
+// note at this point that the variables (states, transitions, rewards)
+// define the relevant MDP dynamics
+
+
+
+// the remaining code can be used to test what's implemented above
+// and produce interesting results from it
+// for some tests you will need to import functions from SolveAcyclicMDP
+
+/*
+// examine transitions and rewards to get a sense of their representation
 console.log(Object.keys(transitions).length);
 console.log(transitions[packState(2, false, 2, false, false)]);
 console.log(rewards);
-// log rewards for edge cases
 console.log(rewards[packState(4, false, 21, true, true)]);
 console.log(rewards[packState(4, false, 21, false, true)]);
 console.log(rewards[packState(21, false, 22, false, true)]);
@@ -169,49 +187,24 @@ console.log(rewards[packState(22, false, 22, false, true)]);
 console.log(rewards[packState(17, false, 17, true, true)]);
 console.log(rewards[packState(17, false, 17, false, true)]);
 
-states = Object.keys(transitions);
-states.push("final");
+// test functions from SolveAcyclicMDP
 var sortedStates = topologicalSort(states, transitions);
 console.log(sortedStates[sortedStates.length - 1]);
-
-function getValue(obj){
-  return Math.max(...Object.values(obj));
-}
-
-function getQ(states, transitions, rewards){
-  var sortedStates = topologicalSort(states, transitions);
-  Q = {}
-  while(sortedStates.length != 0){
-    var state = sortedStates.pop();
-    if (!(state in transitions)){
-      // denotes final state
-      Q[state] = {"dummy" : 0};
-      continue;
-    }
-    Q[state] = {}
-    for (action in transitions[state]){
-      nextStateProbs = transitions[state][action];
-      value = 0;
-      for (nextState in nextStateProbs){
-        stateVal = getValue(Q[nextState]);
-        value += nextStateProbs[nextState] * (stateVal + rewards[state][action][nextState]);
-      }
-      Q[state][action] = value;
-    }
-  }
-  return Q;
-}
-
-
 var Q = getQ(states, transitions, rewards);
 console.log(Q);
 
-
-function optimalPlayerStrategy(Q, state){
+// given a Q function and a state, returns the optimal action from that state
+function optimalPlayerStrategy(Q, state) {
   var obj = Q[state];
   return Object.keys(obj).reduce(function(a, b){ return obj[a] > obj[b] ? a : b });
 }
 
+// test the function above
+var state = packState(20, true, 7, false, false);
+var action = optimalPlayerStrategy(Q, state);
+console.log(action, Q[state]);
+
+// determine the optimal action and value for all starting states
 for (var dealerVal = 2; dealerVal <= 11; dealerVal++) {
   for (var playerVal = 4; playerVal <= 20; playerVal++) {
     var state = packState(playerVal, false, dealerVal, (dealerVal == 11), false);
@@ -224,70 +217,4 @@ for (var dealerVal = 2; dealerVal <= 11; dealerVal++) {
     console.log(playerVal, true, dealerVal, (dealerVal == 11), action, Q[state]);
   }
 }
-
-
-var state = packState(20, true, 7, false, false);
-var action = optimalPlayerStrategy(Q, state);
-console.log(action, Q[state]);
-
-
-
-
-// for (var i = 2; i <= 22; i++) {
-//   for (var j = 1; j <= 22; j++) {
-//     states.push([i, j, false]);
-//     states.push([i, j, true]);
-//   }
-// }
-
-
-
-
-
-
-//// Div -- MDP Solver
-
-
-
-function visitNode(state, transitions, visited, result) {
-  if(state in visited && visited[state] == true){
-    throw new Error(`Not a DAG(Cycle detected) ${state}`);
-  }else if(state in visited){
-    return;
-  }
-
-  visited[state] = true;
-
-  if (state in transitions) {
-    // not a terminal state
-    for (const action in transitions[state]) {
-      for (const nextState in transitions[state][action]) {
-        try {
-          visitNode(nextState, transitions, visited, result);
-        } catch (error) {
-          console.log(state);
-          throw error;
-        }
-      }
-    }
-  }
-
-  visited[state] = false;
-  result.unshift(state);
-}
-
-function topologicalSort(states, transitions){
-  // topologically sorted list
-  var result = [];
-
-  // mapped to true - active, false - done
-  var visited = {};
-
-  for(const state_idx in states){
-    visitNode(states[state_idx], transitions, visited, result);
-  }
-
-  return result;
-}
-
-//// Div End - MDP Solver
+*/
